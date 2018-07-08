@@ -1,6 +1,11 @@
 import requests
 import csv
+import sys
+import io
+import geocoder
 from bs4 import BeautifulSoup
+
+#sys.stdout = io.TextIOWrapper(sys.stdout.buffer,encoding='utf8')
 
 def getOneRow(tr_bf):
 	name = BeautifulSoup(str(tr_bf), "html.parser").find_all('td', class_="views-field views-field-nothing")
@@ -26,9 +31,9 @@ def getOneRow(tr_bf):
 	#print(name_href)
 	if name_href:
 		affi_name = getAffiliation(name_href)
-		latlng = getlatlng(affi_name)
-		lat = latlng['lat']
-		lng = latlng['lng']
+		(lat, lng) = getlatlng(affi_name)
+		# lat = latlng['lat']
+		# lng = latlng['lng']
 
 	return (name, affi_name, country, taxonomy, lat, lng)
 		
@@ -61,21 +66,33 @@ def getAffiliation(href):
     	return ""
 
 def getlatlng(affi):
-	affi = affi.replace(' ', '+')
-	#country = '+' + country
-	response = requests.get('https://maps.googleapis.com/maps/api/geocode/json?address='+affi)
-	resp_json_payload = response.json()
-	try:
-		return resp_json_payload['results'][0]['geometry']['location']
-	except IndexError:
-		return {'lat': '', 'lng': ''}
+	# affi = affi.replace(' ', '+')
+	# #country = '+' + country
+	# response = requests.get('https://maps.googleapis.com/maps/api/geocode/json?address='+affi)
+	# resp_json_payload = response.json()
+	# try:
+	# 	return resp_json_payload['results'][0]['geometry']['location']
+	# except IndexError:
+	# 	return {'lat': '', 'lng': ''}
+	g = geocoder.bing(affi.strip(), key='AqUqw1iEgSAAEYyBdIt5Z2iQsBuqkMiuLWlV96v3qEHjICPAwibc9tE2QaEVi17z')
+
+	if g.latlng:
+		return g.latlng
+	else:
+		return ('', '')
+
+
+	print(g.latlng)
+	#return g.latlng
+
+
 
 
 targets = ["https://harvard-yenching.org/alumni?program=All&field_familyname_value=&field_startdate_value%5Bvalue%5D&field_startdate_value2%5Bvalue%5D&page=" + str(i) for i in range(36)]
 
 f = open('HYI.csv', 'w')
 f_csv = csv.writer(f)
-f_csv.writerow(['name', 'affi_name', 'country', 'taxonomy', 'lat', 'lng'])
+f_csv.writerow(['name', 'country', 'taxonomy', 'lat', 'lng'])
 #f.close()
 
 
