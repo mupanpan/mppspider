@@ -1,4 +1,5 @@
 import requests
+import csv
 from bs4 import BeautifulSoup
 
 def getOneRow(tr_bf):
@@ -11,8 +12,10 @@ def getOneRow(tr_bf):
 	affi_name = ""
 
 	name_href = gethref(name)
-	name = geta_df(name)
+	name = geta_df(name).replace(',', '')
 	taxonomy = geta_df(taxonomy)
+	lat = ""
+	lng = ""
 
 	if nativename:
 		nativename = nativename[0].string.strip()
@@ -23,9 +26,11 @@ def getOneRow(tr_bf):
 	#print(name_href)
 	if name_href:
 		affi_name = getAffiliation(name_href)
-		print(getlatlng(affi_name))
+		latlng = getlatlng(affi_name)
+		lat = latlng['lat']
+		lng = latlng['lng']
 
-	print([name, name_href, affi_name, country, taxonomy])
+	return (name, affi_name, country, taxonomy, lat, lng)
 		
 
 def gethref(td_bf):
@@ -63,10 +68,17 @@ def getlatlng(affi):
 	try:
 		return resp_json_payload['results'][0]['geometry']['location']
 	except IndexError:
-		return {'lat': None, 'lng': None}
+		return {'lat': '', 'lng': ''}
 
 
 targets = ["https://harvard-yenching.org/alumni?program=All&field_familyname_value=&field_startdate_value%5Bvalue%5D&field_startdate_value2%5Bvalue%5D&page=" + str(i) for i in range(36)]
+
+f = open('HYI.csv', 'w')
+f_csv = csv.writer(f)
+f_csv.writerow(['name', 'affi_name', 'country', 'taxonomy', 'lat', 'lng'])
+#f.close()
+
+
 
 for target in targets:	
 	#target = "https://harvard-yenching.org/alumni?program=All&field_familyname_value=&field_startdate_value%5Bvalue%5D&field_startdate_value2%5Bvalue%5D&page=35"
@@ -75,6 +87,8 @@ for target in targets:
 	bf = BeautifulSoup(html, "html.parser")
 	tr_bfs = bf.find_all('tr')
 	for tr_bf in tr_bfs:
-		getOneRow(tr_bf)
+		print(getOneRow(tr_bf))
+		f_csv.writerow(getOneRow(tr_bf))
 
 
+f.close()
